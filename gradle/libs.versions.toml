@@ -14,7 +14,7 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
 [libraries]
-hammerhead-karoo-ext = { group = "io.hammerhead", name = "karoo-ext", version = "1.0.2" }
+hammerhead-karoo-ext = { group = "io.hammerhead", name = "karoo-ext", version = "1.0.3" }
 
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 
