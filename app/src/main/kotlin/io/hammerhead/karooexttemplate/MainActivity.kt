@@ -8,8 +8,6 @@ import io.hammerhead.karooexttemplate.screens.MainScreen
 import io.hammerhead.karooexttemplate.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
-//    private val karooSystem = KarooSystemService(this)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
