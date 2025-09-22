@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches-ignore: [ "master" ]
-    branches: ["*"]
     tags: [ "*-pre-release" ]
 
 jobs:
