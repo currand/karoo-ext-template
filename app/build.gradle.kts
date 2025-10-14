@@ -1,3 +1,4 @@
+import groovy.json.JsonBuilder
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -6,6 +7,20 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.google.devtools.ksp)
 }
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget("17")
+    }
+}
+
+val projectName = "karoo-ext-template"
+val screenshotBaseNames = listOf(
+    "example1.png"
+)
+val projectLabel = "Karoo Extension Template"
+val projectDescription = "Karoo Extension template"
+val projectDeveloper = "currand"
 
 kotlin {
     compilerOptions {
@@ -61,35 +76,73 @@ dependencies {
     implementation(libs.bundles.androidx.lifeycle)
     implementation(libs.androidx.activity.compose)
     implementation(libs.bundles.compose.ui)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.preview)
+    implementation(libs.androidx.glance.appwidget.preview)
+    implementation(libs.androidx.navigation.runtime.android)
+    implementation(libs.javax.inject)
+    implementation(libs.timber)
+    implementation(libs.kotlinx.coroutines.debug)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.androidx.material.icons.extended)
 }
 
 tasks.register("generateManifest") {
     description = "Generates manifest.json with current version information"
     group = "build"
 
+    // Retrieve the preReleaseVersion property at configuration time.
+    // This makes it a declared input to the task.
+    val preReleaseVersion = project.providers.gradleProperty("preReleaseVersion")
+        .getOrElse("")
+
+    // Declare the preReleaseVersion as an input property for Gradle's up-to-date checks.
+    // If this value doesn't change, the task won't re-run.
+    inputs.property("preReleaseVersion", preReleaseVersion)
+    val manifestOutputFile = layout.projectDirectory.file("manifest.json")
+    outputs.file(manifestOutputFile).withPropertyName("manifestFile")
+
+    // The task action, equivalent to the @TaskAction method in the class-based approach.
     doLast {
-        val manifestFile = file("$projectDir/manifest.json")
+        val androidExtension = project.extensions.getByName("android") as com.android.build.gradle.AppExtension
+        val defaultConfig = androidExtension.defaultConfig
+
+        val manifestFile = manifestOutputFile.asFile
+
+        // Use the 'preReleaseVersion' value obtained at configuration time
+        val currentPreReleaseVersion = preReleaseVersion.takeIf { it.isNotBlank() }
+        println("Debug: preReleaseVersion from task input: $currentPreReleaseVersion")
+
+        val releasePathComponent = if (currentPreReleaseVersion != null) {
+            "download/$currentPreReleaseVersion" // e.g., "download/v0.4.2-pre-release"
+        } else {
+            "latest/download" // Default for stable releases or local builds
+        }
+
+        val baseUrl = "https://github.com/$projectDeveloper/$projectName/releases/$releasePathComponent"
+        val apkFileName = "app-release.apk"
+
+        val screenshotUrls = screenshotBaseNames.map { "$baseUrl/$it" }
+
+        // Construct the manifest as a Map
         val manifest = mapOf(
-            "label" to "Karoo Template",
-            "packageName" to android.namespace,
-            "latestApkUrl" to "https://github.com/currand/karoo-ext-template/releases/latest/download/app-release.apk",
-            "latestVersion" to android.defaultConfig.versionName,
-            "latestVersionCode" to android.defaultConfig.versionCode,
-            "developer" to "currand",
-            "description" to "Template Karoo Extension",
-//            "screenshotUrls" to listOf(
-//                "https://github.com/currand/karoo-colorspeed/releases/latest/download/example1.png",
-//                "https://github.com/currand/karoo-colorspeed/releases/latest/download/example2.png",
-//                "https://github.com/currand/karoo-colorspeed/releases/latest/download/example3.png",
-//                "https://github.com/currand/karoo-colorspeed/releases/latest/download/example4.png",
-//                "https://github.com/currand/karoo-colorspeed/releases/latest/download/config_screen.png",
-//                "https://github.com/currand/karoo-colorspeed/releases/latest/download/config_screen2.png"
-//            ),
+            "label" to projectLabel,
+            "packageName" to androidExtension.namespace,
+            "latestApkUrl" to "$baseUrl/$apkFileName",
+            "latestVersion" to defaultConfig.versionName,
+            "latestVersionCode" to defaultConfig.versionCode,
+            "developer" to projectDeveloper,
+            "description" to projectDescription,
+            "screenshotUrls" to screenshotUrls
         )
 
-        val gson = groovy.json.JsonBuilder(manifest).toPrettyString()
+        // Use groovy.json.JsonBuilder to serialize the Map to a pretty-printed JSON string
+        val gson = JsonBuilder(manifest).toPrettyString()
         manifestFile.writeText(gson)
-        println("Generated manifest.json with version ${android.defaultConfig.versionName} (${android.defaultConfig.versionCode})")
+        println("Generated manifest.json with download path: $releasePathComponent at ${manifestFile.absolutePath}")
     }
 }
 
@@ -101,22 +154,4 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
-}
-
-dependencies {
-    implementation(libs.hammerhead.karoo.ext)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.bundles.androidx.lifeycle)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.bundles.compose.ui)
-    implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.glance.appwidget)
-    implementation(libs.androidx.glance.preview)
-    implementation(libs.androidx.glance.appwidget.preview)
-    implementation(libs.androidx.navigation.runtime.android)
-    implementation(libs.javax.inject)
-    implementation(libs.timber)
-    implementation(libs.kotlinx.coroutines.debug)
-    implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
 }
